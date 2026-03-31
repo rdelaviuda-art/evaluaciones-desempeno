@@ -402,17 +402,31 @@ function NuevaEvalTab({toast}){
 
   function reset(){setStep(0);setEmpId("");setFecha(new Date().toISOString().split("T")[0]);setRespuestas(initRespuestas());setSecIdx(0);setEvalId(null);}
 
-  function exportarTxt(){
-    const emp=empleados.find(e=>e.id===empId);
-    if(!emp)return;
+  function buildTexto(emp){
     let txt=`EVALUACIÓN DE DESEMPEÑO\nEmpleado: ${emp.nombre}\nPuesto: ${emp.puesto||""}\nDepartamento: ${emp.departamento||""}\nFecha: ${formatDate(fecha)}\n`;
     SECCIONES.forEach(sec=>{
       txt+=`\n${sec.titulo.toUpperCase()}\n${"=".repeat(sec.titulo.length)}\n`;
       sec.preguntas.forEach((p,i)=>{txt+=`\nPregunta: ${p}\nRespuesta: ${respuestas[sec.id+"_"+i]||"—"}\n`;});
     });
+    return txt;
+  }
+
+  function exportarTxt(){
+    const emp=empleados.find(e=>e.id===empId);
+    if(!emp)return;
+    const txt=buildTexto(emp);
     const b=new Blob([txt],{type:"text/plain;charset=utf-8"});
     const u=URL.createObjectURL(b);const a=document.createElement("a");
     a.href=u;a.download=`Evaluacion_${emp.nombre.replace(/ /g,"_")}_${fecha}.txt`;a.click();URL.revokeObjectURL(u);
+  }
+
+  function generarInforme(){
+    const emp=empleados.find(e=>e.id===empId);
+    if(!emp)return;
+    const txt=buildTexto(emp);
+    if(window.sendPrompt){
+      window.sendPrompt(`Genera el informe Word para dirección con estos datos de evaluación, usando exactamente el mismo formato y estructura del informe que hicimos antes (portada, secciones con preguntas en cursiva y respuestas literales, pie de firma):\n\n${txt}`);
+    }
   }
 
   const completadas=contarRespuestas(respuestas);
@@ -425,7 +439,8 @@ function NuevaEvalTab({toast}){
     React.createElement("p",{style:{color:"#555",fontSize:13,marginBottom:20}},`${completadas} de ${TOTAL_PREGUNTAS} respuestas completadas`),
     React.createElement("div",{className:"row",style:{justifyContent:"center",gap:10}},
       React.createElement("button",{onClick:reset},"Nueva evaluación"),
-      React.createElement("button",{className:"primary",onClick:exportarTxt},"Descargar borrador (.txt)")
+      React.createElement("button",{onClick:exportarTxt},"Descargar borrador (.txt)"),
+      React.createElement("button",{className:"primary",onClick:generarInforme},"📄 Generar informe Word")
     )
   );
 
@@ -522,10 +537,22 @@ function HistorialTab({toast}){
     }catch(e){toast("Error al eliminar","error");}
   }
 
+  function generarInformeDetalle(ev){
+    let txt=`EVALUACIÓN DE DESEMPEÑO\nEmpleado: ${ev.empleado_nombre}\nPuesto: ${ev.empleado_puesto||""}\nFecha: ${formatDate(ev.fecha)}\n`;
+    SECCIONES.forEach(sec=>{
+      txt+=`\n${sec.titulo.toUpperCase()}\n${"=".repeat(sec.titulo.length)}\n`;
+      sec.preguntas.forEach((p,i)=>{txt+=`\nPregunta: ${p}\nRespuesta: ${(ev.respuestas||{})[sec.id+"_"+i]||"—"}\n`;});
+    });
+    if(window.sendPrompt){
+      window.sendPrompt(`Genera el informe Word para dirección con estos datos de evaluación, usando exactamente el mismo formato y estructura del informe que hicimos antes (portada, secciones con preguntas en cursiva y respuestas literales, pie de firma):\n\n${txt}`);
+    }
+  }
+
   if(detalle)return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
     React.createElement("div",{className:"row",style:{marginBottom:"1rem"}},
       React.createElement("button",{onClick:()=>setDetalle(null)},"← Volver"),
       React.createElement("span",{className:"spacer"}),
+      React.createElement("button",{className:"primary",onClick:()=>generarInformeDetalle(detalle)},"📄 Generar informe Word"),
       React.createElement("button",{className:"small danger",onClick:()=>eliminar(detalle.id)},"Eliminar")
     ),
     React.createElement("div",{className:"card",style:{marginBottom:12}},
