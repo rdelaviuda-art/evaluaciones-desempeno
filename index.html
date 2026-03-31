@@ -6,7 +6,6 @@
 <title>Evaluaciones de Desempeño</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#111;font-size:14px;line-height:1.6}
@@ -24,7 +23,7 @@ textarea{resize:vertical;min-height:80px}
 label{font-size:12px;font-weight:500;color:#555;display:block;margin-bottom:4px}
 .card{background:#fff;border:0.5px solid #e5e5e5;border-radius:12px;padding:1rem 1.25rem}
 .nav{background:#fff;border-bottom:0.5px solid #e5e5e5;padding:0 1.25rem;display:flex;align-items:center;gap:0;height:48px;position:sticky;top:0;z-index:10}
-.nav-tab{height:48px;padding:0 14px;border:none;border-radius:0;border-bottom:2px solid transparent;background:transparent;font-size:13px;color:#666;display:flex;align-items:center;gap:6px}
+.nav-tab{height:48px;padding:0 14px;border:none;border-radius:0;border-bottom:2px solid transparent;background:transparent;font-size:13px;color:#666;display:flex;align-items:center}
 .nav-tab:hover{background:#f5f5f5;color:#111}
 .nav-tab.active{border-bottom:2px solid #1F4E79;color:#1F4E79;font-weight:500}
 .nav-brand{font-weight:500;font-size:14px;color:#1F4E79;margin-right:16px;white-space:nowrap}
@@ -46,37 +45,57 @@ label{font-size:12px;font-weight:500;color:#555;display:block;margin-bottom:4px}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:2rem 1rem;overflow-y:auto}
 .modal{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:460px;border:0.5px solid #e5e5e5}
 .steps{display:flex;margin-bottom:1.5rem;border-bottom:0.5px solid #e5e5e5;overflow-x:auto}
-.step{flex:1;min-width:28px;padding:8px 4px;text-align:center;font-size:11px;color:#999;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.step{flex:1;min-width:28px;padding:8px 4px;text-align:center;font-size:11px;color:#999;border-bottom:2px solid transparent;cursor:pointer}
 .step.done{color:#555;border-bottom:2px solid #ccc}
 .step.active{color:#1F4E79;font-weight:500;border-bottom:2px solid #1F4E79}
 .progress-bar{height:3px;background:#e5e5e5;border-radius:2px;margin-bottom:1rem;overflow:hidden}
 .progress-fill{height:100%;background:#1F4E79;transition:width 0.3s}
 .empty-state{text-align:center;padding:3rem 1rem;color:#777}
 .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.config-box{background:#fffbe6;border:0.5px solid #f5c842;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px}
-.config-box code{background:#f0f0f0;border-radius:4px;padding:2px 6px;font-size:12px;font-family:monospace}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:#1F4E79;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1F4E79;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;animation:fadein 0.2s}
 .toast.error{background:#c0392b}
 @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-.sql-block{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:1rem;font-size:12px;font-family:monospace;white-space:pre;overflow-x:auto;margin:8px 0}
+.sql-block{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:1rem;font-size:12px;font-family:monospace;white-space:pre;overflow-x:auto;margin:8px 0;line-height:1.5}
+.config-step{margin-bottom:1.25rem}
+.config-step-num{display:inline-block;width:22px;height:22px;border-radius:50%;background:#1F4E79;color:#fff;font-size:11px;font-weight:500;text-align:center;line-height:22px;margin-right:8px;flex-shrink:0}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <script>
-const {useState,useEffect,useCallback,useRef}=React;
+const {useState,useEffect,useRef}=React;
 const {createRoot}=ReactDOM;
 
-// ─── CONFIGURACIÓN SUPABASE ───────────────────────────────────────────────────
-const SUPABASE_URL   = "https://czbkwzvaqduhehpzjpwn.supabase.co";   // ej: https://xxxx.supabase.co
-const SUPABASE_ANON  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Ymt3enZhcWR1aGVocHpqcHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NTcxNTYsImV4cCI6MjA5MDQzMzE1Nn0.mXmih4q3Pq-0QcPMPR09F9SXq8-9Vc0RE0KoepPNctc";
+// ── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
+const SUPABASE_URL  = "TU_SUPABASE_URL";
+const SUPABASE_ANON = "TU_SUPABASE_ANON_KEY";
 
-const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+// ── CLIENTE REST SUPABASE (sin librería externa) ──────────────────────────────
+const api = {
+  async req(method, path, body){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+      method,
+      headers:{
+        "apikey": SUPABASE_ANON,
+        "Authorization": `Bearer ${SUPABASE_ANON}`,
+        "Content-Type": "application/json",
+        "Prefer": method==="POST" ? "return=representation" : "return=representation"
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if(!res.ok){ const t=await res.text(); throw new Error(t); }
+    const txt=await res.text();
+    return txt ? JSON.parse(txt) : null;
+  },
+  get(path){ return api.req("GET", path); },
+  post(path,body){ return api.req("POST", path, body); },
+  patch(path,body){ return api.req("PATCH", path, body); },
+  del(path){ return api.req("DELETE", path); },
+};
 
-// ─── CUESTIONARIO ─────────────────────────────────────────────────────────────
+// ── CUESTIONARIO ──────────────────────────────────────────────────────────────
 const SECCIONES=[
   {id:"organizacion",titulo:"Organización",preguntas:[
     "¿Sabe distinguir entre temas importantes y temas urgentes?",
@@ -136,20 +155,22 @@ function initRespuestas(){
   return r;
 }
 function getIniciales(n){return(n||"?").split(" ").slice(0,2).map(p=>p[0]).join("").toUpperCase();}
-function formatDate(iso){if(!iso)return"";const d=new Date(iso);return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function formatDate(iso){
+  if(!iso)return"";
+  const d=new Date(iso+"T00:00:00");
+  return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
 function contarRespuestas(r){return Object.values(r||{}).filter(v=>(v||"").trim()).length;}
 
-// ─── TOAST ────────────────────────────────────────────────────────────────────
+// ── TOAST ─────────────────────────────────────────────────────────────────────
 function Toast({msg,type,onDone}){
   useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
   return React.createElement("div",{className:`toast${type==="error"?" error":""}`},msg);
 }
 
-// ─── PANTALLA CONFIG ──────────────────────────────────────────────────────────
+// ── PANTALLA DE CONFIGURACIÓN ─────────────────────────────────────────────────
 function ConfigScreen(){
-  const SQL=`-- Ejecuta esto en Supabase > SQL Editor
-
-create table empleados (
+  const SQL=`create table empleados (
   id uuid primary key default gen_random_uuid(),
   nombre text not null,
   puesto text,
@@ -169,43 +190,61 @@ create table evaluaciones (
   total integer default 26,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
-);`;
+);
 
-  return React.createElement("div",{style:{maxWidth:620,margin:"2rem auto",padding:"0 1rem"}},
+create index idx_evaluaciones_empleado on evaluaciones(empleado_id);
+create index idx_evaluaciones_fecha on evaluaciones(fecha);
+
+alter table empleados enable row level security;
+alter table evaluaciones enable row level security;
+
+create policy "acceso_publico_empleados" on empleados
+  for all using (true) with check (true);
+create policy "acceso_publico_evaluaciones" on evaluaciones
+  for all using (true) with check (true);`;
+
+  function step(n,titulo,contenido){
+    return React.createElement("div",{className:"config-step",style:{display:"flex",gap:10,alignItems:"flex-start"}},
+      React.createElement("span",{className:"config-step-num"},n),
+      React.createElement("div",{style:{flex:1}},
+        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:4}},titulo),
+        contenido
+      )
+    );
+  }
+
+  return React.createElement("div",{style:{maxWidth:640,margin:"2rem auto",padding:"0 1rem"}},
     React.createElement("div",{className:"card"},
-      React.createElement("div",{style:{fontWeight:500,fontSize:16,marginBottom:"0.5rem",color:"#1F4E79"}},"⚙️ Configuración de Supabase"),
-      React.createElement("p",{style:{fontSize:13,color:"#555",marginBottom:"1rem"}},"Sigue estos pasos para conectar la aplicación a tu base de datos:"),
-
-      React.createElement("div",{style:{marginBottom:"1rem"}},
-        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"1. Crea el proyecto en Supabase"),
-        React.createElement("p",{style:{fontSize:13,color:"#555"}},"Ve a ",React.createElement("a",{href:"https://supabase.com",target:"_blank",style:{color:"#1F4E79"}},"supabase.com"),", crea una cuenta gratuita y un nuevo proyecto.")
-      ),
-
-      React.createElement("div",{style:{marginBottom:"1rem"}},
-        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"2. Crea las tablas"),
-        React.createElement("p",{style:{fontSize:13,color:"#555",marginBottom:6}},"En tu proyecto ve a ",React.createElement("strong",null,"SQL Editor")," y ejecuta:"),
-        React.createElement("div",{className:"sql-block"},SQL)
-      ),
-
-      React.createElement("div",{style:{marginBottom:"1rem"}},
-        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"3. Copia tus credenciales"),
-        React.createElement("p",{style:{fontSize:13,color:"#555"}},"En tu proyecto ve a ",React.createElement("strong",null,"Project Settings > API")," y copia:"),
-        React.createElement("ul",{style:{fontSize:13,color:"#555",paddingLeft:"1.2rem",marginTop:6}},
-          React.createElement("li",null,React.createElement("code",null,"Project URL")),
-          React.createElement("li",null,React.createElement("code",null,"anon public key"))
+      React.createElement("div",{style:{fontWeight:500,fontSize:16,marginBottom:"1.25rem",color:"#1F4E79"}},"Configuración inicial — Supabase"),
+      step("1","Crea el proyecto en Supabase",
+        React.createElement("p",{style:{fontSize:13,color:"#555"}},
+          "Ve a ",React.createElement("a",{href:"https://supabase.com",target:"_blank",style:{color:"#1F4E79"}},"supabase.com"),
+          ", crea una cuenta gratuita y un nuevo proyecto."
         )
       ),
-
-      React.createElement("div",null,
-        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"4. Edita el archivo HTML"),
-        React.createElement("p",{style:{fontSize:13,color:"#555"}},"Abre el archivo con un editor de texto y reemplaza estas dos líneas al inicio del script:"),
-        React.createElement("div",{className:"sql-block"},`const SUPABASE_URL  = "TU_SUPABASE_URL";\nconst SUPABASE_ANON = "TU_SUPABASE_ANON_KEY";`)
+      step("2","Crea las tablas (SQL Editor → New query → Run)",
+        React.createElement("div",{className:"sql-block"},SQL)
+      ),
+      step("3","Copia tus credenciales",
+        React.createElement("p",{style:{fontSize:13,color:"#555"}},
+          "En tu proyecto ve a ",React.createElement("strong",null,"Settings → API"),
+          " y copia el ",React.createElement("strong",null,"Project URL")," y la clave ",React.createElement("strong",null,"anon public"),"."
+        )
+      ),
+      step("4","Edita este archivo HTML",
+        React.createElement("p",{style:{fontSize:13,color:"#555"}},
+          "Abre el archivo con el Bloc de notas, busca las líneas ",
+          React.createElement("code",{style:{background:"#f0f0f0",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}},"TU_SUPABASE_URL"),
+          " y ",
+          React.createElement("code",{style:{background:"#f0f0f0",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}},"TU_SUPABASE_ANON_KEY"),
+          " y sustitúyelas por tus valores reales."
+        )
       )
     )
   );
 }
 
-// ─── EMPLEADOS ────────────────────────────────────────────────────────────────
+// ── EMPLEADOS ─────────────────────────────────────────────────────────────────
 function EmpleadosTab({toast}){
   const [empleados,setEmpleados]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -217,35 +256,45 @@ function EmpleadosTab({toast}){
 
   async function load(){
     setLoading(true);
-    const {data:emps}=await db.from("empleados").select("*").eq("activo",true).order("nombre");
-    const {data:evs}=await db.from("evaluaciones").select("empleado_id");
-    const c={};
-    (evs||[]).forEach(e=>{c[e.empleado_id]=(c[e.empleado_id]||0)+1;});
-    setEmpleados(emps||[]);setCounts(c);setLoading(false);
+    try{
+      const emps=await api.get("empleados?activo=eq.true&order=nombre.asc&select=*");
+      const evs=await api.get("evaluaciones?select=empleado_id");
+      const c={};(evs||[]).forEach(e=>{c[e.empleado_id]=(c[e.empleado_id]||0)+1;});
+      setEmpleados(emps||[]);setCounts(c);
+    }catch(e){toast("Error cargando empleados","error");}
+    setLoading(false);
   }
 
   useEffect(()=>{load();},[]);
 
   async function save(){
-    if(!form.nombre.trim()) return;
+    if(!form.nombre.trim())return;
     setSaving(true);
-    if(editId){
-      const {error}=await db.from("empleados").update(form).eq("id",editId);
-      if(error){toast("Error al guardar","error");}else{toast("Empleado actualizado");}
-    } else {
-      const {error}=await db.from("empleados").insert(form);
-      if(error){toast("Error al crear empleado","error");}else{toast("Empleado creado");}
-    }
-    setSaving(false);setModal(false);setEditId(null);setForm({nombre:"",puesto:"",departamento:""});
-    load();
+    try{
+      if(editId){
+        await api.patch(`empleados?id=eq.${editId}`,form);
+        toast("Empleado actualizado");
+      }else{
+        await api.post("empleados",form);
+        toast("Empleado creado");
+      }
+      setModal(false);setEditId(null);setForm({nombre:"",puesto:"",departamento:""});
+      load();
+    }catch(e){toast("Error al guardar","error");}
+    setSaving(false);
   }
 
   async function del(id){
-    const {error}=await db.from("empleados").update({activo:false}).eq("id",id);
-    if(error) toast("Error al eliminar","error"); else {toast("Empleado eliminado");load();}
+    try{
+      await api.patch(`empleados?id=eq.${id}`,{activo:false});
+      toast("Empleado eliminado");load();
+    }catch(e){toast("Error al eliminar","error");}
   }
 
-  function openEdit(emp){setForm({nombre:emp.nombre,puesto:emp.puesto||"",departamento:emp.departamento||""});setEditId(emp.id);setModal(true);}
+  function openEdit(emp){
+    setForm({nombre:emp.nombre,puesto:emp.puesto||"",departamento:emp.departamento||""});
+    setEditId(emp.id);setModal(true);
+  }
 
   return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
     React.createElement("div",{className:"row",style:{marginBottom:"1rem"}},
@@ -253,18 +302,20 @@ function EmpleadosTab({toast}){
       React.createElement("span",{className:"spacer"}),
       React.createElement("button",{className:"primary",onClick:()=>{setForm({nombre:"",puesto:"",departamento:""});setEditId(null);setModal(true)}},"+ Nuevo empleado")
     ),
-    loading?React.createElement("div",{style:{textAlign:"center",padding:"2rem",color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando..."):
-    empleados.length===0?React.createElement("div",{className:"empty-state"},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"👥"),React.createElement("p",null,"Aún no hay empleados. Añade el primero.")):
-    empleados.map(emp=>React.createElement("div",{key:emp.id,className:"emp-row"},
-      React.createElement("div",{className:"avatar"},getIniciales(emp.nombre)),
-      React.createElement("div",{style:{flex:1}},
-        React.createElement("div",{style:{fontWeight:500,fontSize:13}},emp.nombre),
-        React.createElement("div",{style:{fontSize:12,color:"#555"}},[emp.puesto,emp.departamento].filter(Boolean).join(" · ")||"Sin datos")
-      ),
-      React.createElement("span",{className:"badge badge-info"},`${counts[emp.id]||0} eval.`),
-      React.createElement("button",{className:"small",onClick:()=>openEdit(emp)},"Editar"),
-      React.createElement("button",{className:"small danger",onClick:()=>del(emp.id)},"Eliminar")
-    )),
+    loading
+      ?React.createElement("div",{style:{textAlign:"center",padding:"2rem",color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando...")
+      :empleados.length===0
+        ?React.createElement("div",{className:"empty-state"},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"👥"),React.createElement("p",null,"Aún no hay empleados. Añade el primero."))
+        :empleados.map(emp=>React.createElement("div",{key:emp.id,className:"emp-row"},
+            React.createElement("div",{className:"avatar"},getIniciales(emp.nombre)),
+            React.createElement("div",{style:{flex:1}},
+              React.createElement("div",{style:{fontWeight:500,fontSize:13}},emp.nombre),
+              React.createElement("div",{style:{fontSize:12,color:"#555"}},[emp.puesto,emp.departamento].filter(Boolean).join(" · ")||"Sin datos")
+            ),
+            React.createElement("span",{className:"badge badge-info"},`${counts[emp.id]||0} eval.`),
+            React.createElement("button",{className:"small",onClick:()=>openEdit(emp)},"Editar"),
+            React.createElement("button",{className:"small danger",onClick:()=>del(emp.id)},"Eliminar")
+          )),
     modal&&React.createElement("div",{className:"modal-bg",onClick:e=>{if(e.target===e.currentTarget){setModal(false);setEditId(null);}}},
       React.createElement("div",{className:"modal"},
         React.createElement("p",{style:{fontWeight:500,marginBottom:"1rem"}},editId?"Editar empleado":"Nuevo empleado"),
@@ -277,74 +328,83 @@ function EmpleadosTab({toast}){
         React.createElement("div",{className:"row"},
           React.createElement("button",{onClick:()=>{setModal(false);setEditId(null);}},"Cancelar"),
           React.createElement("span",{className:"spacer"}),
-          React.createElement("button",{className:"primary",disabled:saving,onClick:save},saving?React.createElement(React.Fragment,null,React.createElement("span",{className:"spinner"}),"Guardando..."):(editId?"Guardar cambios":"Crear empleado"))
+          React.createElement("button",{className:"primary",disabled:saving,onClick:save},
+            saving?React.createElement(React.Fragment,null,React.createElement("span",{className:"spinner"}),"Guardando..."):editId?"Guardar cambios":"Crear empleado"
+          )
         )
       )
     )
   );
 }
 
-// ─── NUEVA EVALUACIÓN ─────────────────────────────────────────────────────────
+// ── NUEVA EVALUACIÓN ──────────────────────────────────────────────────────────
 function NuevaEvalTab({toast}){
   const [empleados,setEmpleados]=useState([]);
-  const [step,setStep]=useState(0); // 0=config, 1=formulario, 2=ok
+  const [step,setStep]=useState(0);
   const [empId,setEmpId]=useState("");
   const [fecha,setFecha]=useState(new Date().toISOString().split("T")[0]);
   const [respuestas,setRespuestas]=useState(initRespuestas());
   const [secIdx,setSecIdx]=useState(0);
   const [saving,setSaving]=useState(false);
-  const [evalId,setEvalId]=useState(null); // id del registro en Supabase (para upsert)
+  const [evalId,setEvalId]=useState(null);
   const [historial,setHistorial]=useState([]);
   const [loadingHist,setLoadingHist]=useState(false);
-  const autoSaveRef=useRef(null);
+  const autoRef=useRef(null);
 
   useEffect(()=>{
-    db.from("empleados").select("*").eq("activo",true).order("nombre").then(({data})=>setEmpleados(data||[]));
+    api.get("empleados?activo=eq.true&order=nombre.asc&select=*").then(d=>setEmpleados(d||[])).catch(()=>{});
   },[]);
 
   useEffect(()=>{
     if(!empId){setHistorial([]);return;}
     setLoadingHist(true);
-    db.from("evaluaciones").select("id,fecha,completadas,total").eq("empleado_id",empId).order("fecha",{ascending:false})
-      .then(({data})=>{setHistorial(data||[]);setLoadingHist(false);});
+    api.get(`evaluaciones?empleado_id=eq.${empId}&order=fecha.desc&select=id,fecha,completadas,total`)
+      .then(d=>{setHistorial(d||[]);setLoadingHist(false);}).catch(()=>setLoadingHist(false));
   },[empId]);
 
-  async function cargarEval(id){
-    const {data}=await db.from("evaluaciones").select("*").eq("id",id).single();
-    if(data){setRespuestas({...initRespuestas(),...data.respuestas});setEvalId(data.id);setFecha(data.fecha);}
-  }
-
-  // Autoguardado cada 30s mientras se rellena
   useEffect(()=>{
-    if(step!==1) return;
-    autoSaveRef.current=setInterval(()=>guardar(true),30000);
-    return()=>clearInterval(autoSaveRef.current);
+    if(step!==1)return;
+    autoRef.current=setInterval(()=>guardar(true),30000);
+    return()=>clearInterval(autoRef.current);
   },[step,respuestas,empId,fecha,evalId]);
+
+  async function cargarEval(id){
+    try{
+      const data=await api.get(`evaluaciones?id=eq.${id}&select=*`);
+      if(data&&data[0]){
+        const ev=data[0];
+        setRespuestas({...initRespuestas(),...ev.respuestas});
+        setEvalId(ev.id);setFecha(ev.fecha);
+      }
+    }catch(e){toast("Error cargando evaluación","error");}
+  }
 
   async function guardar(silencioso=false){
     const emp=empleados.find(e=>e.id===empId);
-    if(!emp||!empId) return;
-    if(!silencioso) setSaving(true);
+    if(!emp||!empId)return;
+    if(!silencioso)setSaving(true);
     const completadas=contarRespuestas(respuestas);
     const payload={empleado_id:empId,empleado_nombre:emp.nombre,empleado_puesto:emp.puesto||"",fecha,respuestas,completadas,total:TOTAL_PREGUNTAS,updated_at:new Date().toISOString()};
-    let error,data;
-    if(evalId){
-      ({error}=await db.from("evaluaciones").update(payload).eq("id",evalId));
-    } else {
-      ({data,error}=await db.from("evaluaciones").insert(payload).select().single());
-      if(data) setEvalId(data.id);
+    try{
+      if(evalId){
+        await api.patch(`evaluaciones?id=eq.${evalId}`,payload);
+      }else{
+        const data=await api.post("evaluaciones",payload);
+        if(data&&data[0])setEvalId(data[0].id);
+      }
+      if(!silencioso)setStep(2);
+      else toast("Autoguardado ✓");
+    }catch(e){
+      toast("Error al guardar","error");
     }
-    if(!silencioso) setSaving(false);
-    if(error){if(!silencioso)toast("Error al guardar","error");}
-    else{if(!silencioso){setStep(2);}}
-    if(silencioso&&!error) toast("Guardado automático ✓");
+    if(!silencioso)setSaving(false);
   }
 
   function reset(){setStep(0);setEmpId("");setFecha(new Date().toISOString().split("T")[0]);setRespuestas(initRespuestas());setSecIdx(0);setEvalId(null);}
 
   function exportarTxt(){
     const emp=empleados.find(e=>e.id===empId);
-    if(!emp) return;
+    if(!emp)return;
     let txt=`EVALUACIÓN DE DESEMPEÑO\nEmpleado: ${emp.nombre}\nPuesto: ${emp.puesto||""}\nDepartamento: ${emp.departamento||""}\nFecha: ${formatDate(fecha)}\n`;
     SECCIONES.forEach(sec=>{
       txt+=`\n${sec.titulo.toUpperCase()}\n${"=".repeat(sec.titulo.length)}\n`;
@@ -359,7 +419,7 @@ function NuevaEvalTab({toast}){
   const pct=Math.round((completadas/TOTAL_PREGUNTAS)*100);
   const secActual=SECCIONES[secIdx];
 
-  if(step===2) return React.createElement("div",{style:{padding:"2rem",textAlign:"center",maxWidth:480,margin:"0 auto"}},
+  if(step===2)return React.createElement("div",{style:{padding:"2rem",textAlign:"center",maxWidth:480,margin:"0 auto"}},
     React.createElement("div",{style:{fontSize:40,marginBottom:12}},"✅"),
     React.createElement("p",{style:{fontWeight:500,fontSize:15,marginBottom:8}},"Evaluación guardada en Supabase"),
     React.createElement("p",{style:{color:"#555",fontSize:13,marginBottom:20}},`${completadas} de ${TOTAL_PREGUNTAS} respuestas completadas`),
@@ -369,7 +429,7 @@ function NuevaEvalTab({toast}){
     )
   );
 
-  if(step===0) return React.createElement("div",{style:{padding:"1rem",maxWidth:520,margin:"0 auto"}},
+  if(step===0)return React.createElement("div",{style:{padding:"1rem",maxWidth:520,margin:"0 auto"}},
     React.createElement("p",{style:{fontWeight:500,fontSize:15,marginBottom:"1rem"}},"Nueva evaluación"),
     React.createElement("div",{className:"card"},
       React.createElement("label",null,"Empleado"),
@@ -381,11 +441,12 @@ function NuevaEvalTab({toast}){
       React.createElement("input",{type:"date",value:fecha,onChange:e=>setFecha(e.target.value),style:{marginBottom:12}}),
       empId&&React.createElement("div",{style:{marginBottom:12}},
         React.createElement("label",null,"Continuar desde evaluación anterior (opcional)"),
-        loadingHist?React.createElement("div",{style:{fontSize:12,color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando..."):
-        React.createElement("select",{value:evalId||"",onChange:e=>{if(e.target.value)cargarEval(e.target.value);else{setRespuestas(initRespuestas());setEvalId(null);}}},
-          React.createElement("option",{value:""},"Empezar desde cero"),
-          historial.map(ev=>React.createElement("option",{key:ev.id,value:ev.id},`${formatDate(ev.fecha)} · ${ev.completadas}/${ev.total} resp.`))
-        )
+        loadingHist
+          ?React.createElement("div",{style:{fontSize:12,color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando...")
+          :React.createElement("select",{value:evalId||"",onChange:e=>{if(e.target.value)cargarEval(e.target.value);else{setRespuestas(initRespuestas());setEvalId(null);}}},
+              React.createElement("option",{value:""},"Empezar desde cero"),
+              historial.map(ev=>React.createElement("option",{key:ev.id,value:ev.id},`${formatDate(ev.fecha)} · ${ev.completadas}/${ev.total} resp.`))
+            )
       ),
       React.createElement("button",{className:"primary",style:{width:"100%",marginTop:4},disabled:!empId,onClick:()=>{if(empId)setStep(1);}},"Iniciar evaluación →")
     )
@@ -423,7 +484,7 @@ function NuevaEvalTab({toast}){
   );
 }
 
-// ─── HISTORIAL ────────────────────────────────────────────────────────────────
+// ── HISTORIAL ─────────────────────────────────────────────────────────────────
 function HistorialTab({toast}){
   const [evals,setEvals]=useState([]);
   const [loading,setLoading]=useState(true);
@@ -433,33 +494,38 @@ function HistorialTab({toast}){
   const [filtroHasta,setFiltroHasta]=useState("");
   const [detalle,setDetalle]=useState(null);
 
+  useEffect(()=>{
+    api.get("empleados?activo=eq.true&order=nombre.asc&select=id,nombre").then(d=>setEmpleados(d||[])).catch(()=>{});
+  },[]);
+
   async function load(){
     setLoading(true);
-    let q=db.from("evaluaciones").select("*").order("fecha",{ascending:false});
-    if(filtroEmp) q=q.eq("empleado_id",filtroEmp);
-    if(filtroDesde) q=q.gte("fecha",filtroDesde);
-    if(filtroHasta) q=q.lte("fecha",filtroHasta);
-    const {data}=await q;
-    setEvals(data||[]);setLoading(false);
+    try{
+      let path="evaluaciones?order=fecha.desc&select=*";
+      if(filtroEmp) path+=`&empleado_id=eq.${filtroEmp}`;
+      if(filtroDesde) path+=`&fecha=gte.${filtroDesde}`;
+      if(filtroHasta) path+=`&fecha=lte.${filtroHasta}`;
+      const data=await api.get(path);
+      setEvals(data||[]);
+    }catch(e){toast("Error cargando historial","error");}
+    setLoading(false);
   }
-
-  useEffect(()=>{
-    db.from("empleados").select("id,nombre").eq("activo",true).order("nombre").then(({data})=>setEmpleados(data||[]));
-  },[]);
 
   useEffect(()=>{load();},[filtroEmp,filtroDesde,filtroHasta]);
 
   async function eliminar(id){
-    const {error}=await db.from("evaluaciones").delete().eq("id",id);
-    if(error) toast("Error al eliminar","error");
-    else{toast("Evaluación eliminada");if(detalle?.id===id)setDetalle(null);load();}
+    try{
+      await api.del(`evaluaciones?id=eq.${id}`);
+      toast("Evaluación eliminada");
+      if(detalle?.id===id)setDetalle(null);
+      load();
+    }catch(e){toast("Error al eliminar","error");}
   }
 
-  if(detalle) return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
+  if(detalle)return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
     React.createElement("div",{className:"row",style:{marginBottom:"1rem"}},
       React.createElement("button",{onClick:()=>setDetalle(null)},"← Volver"),
       React.createElement("span",{className:"spacer"}),
-      React.createElement("span",{style:{fontSize:12,color:"#777"}},`ID: ${detalle.id.slice(0,8)}…`),
       React.createElement("button",{className:"small danger",onClick:()=>eliminar(detalle.id)},"Eliminar")
     ),
     React.createElement("div",{className:"card",style:{marginBottom:12}},
@@ -471,14 +537,15 @@ function HistorialTab({toast}){
         ),
         React.createElement("span",{className:"spacer"}),
         React.createElement("span",{style:{fontSize:13,color:"#555"}},formatDate(detalle.fecha)),
-        React.createElement("span",{className:"badge",style:{background:detalle.completadas===detalle.total?"#EAF3DE":"#FAEEDA",color:detalle.completadas===detalle.total?"#3B6D11":"#854F0B"}},`${detalle.completadas}/${detalle.total}`)
+        React.createElement("span",{className:"badge",style:{background:detalle.completadas===detalle.total?"#EAF3DE":"#FAEEDA",color:detalle.completadas===detalle.total?"#3B6D11":"#854F0B"}},
+          `${detalle.completadas}/${detalle.total}`)
       )
     ),
     SECCIONES.map(sec=>React.createElement("div",{key:sec.id,style:{marginBottom:12}},
       React.createElement("div",{className:"section-title"},sec.titulo),
       sec.preguntas.map((p,i)=>{
         const r=(detalle.respuestas||{})[sec.id+"_"+i];
-        if(!r) return null;
+        if(!r)return null;
         return React.createElement("div",{key:i,className:"pregunta-bloque"},
           React.createElement("div",{className:"eval-q"},p),
           React.createElement("div",{style:{fontSize:13,marginTop:4}},r)
@@ -491,7 +558,8 @@ function HistorialTab({toast}){
     React.createElement("p",{style:{fontWeight:500,fontSize:15,marginBottom:"1rem"}},"Historial de evaluaciones"),
     React.createElement("div",{className:"card",style:{marginBottom:12}},
       React.createElement("div",{className:"grid3"},
-        React.createElement("div",null,React.createElement("label",null,"Empleado"),
+        React.createElement("div",null,
+          React.createElement("label",null,"Empleado"),
           React.createElement("select",{value:filtroEmp,onChange:e=>setFiltroEmp(e.target.value)},
             React.createElement("option",{value:""},"Todos"),
             empleados.map(e=>React.createElement("option",{key:e.id,value:e.id},e.nombre))
@@ -501,44 +569,45 @@ function HistorialTab({toast}){
         React.createElement("div",null,React.createElement("label",null,"Hasta"),React.createElement("input",{type:"date",value:filtroHasta,onChange:e=>setFiltroHasta(e.target.value)}))
       )
     ),
-    loading?React.createElement("div",{style:{textAlign:"center",padding:"2rem",color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando..."):
-    evals.length===0?React.createElement("div",{className:"empty-state"},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"📋"),React.createElement("p",null,"No hay evaluaciones que coincidan con los filtros.")):
-    React.createElement("div",{className:"card",style:{padding:0,overflow:"hidden"}},
-      React.createElement("table",{className:"hist-table"},
-        React.createElement("thead",null,React.createElement("tr",null,
-          React.createElement("th",null,"Fecha"),
-          React.createElement("th",null,"Empleado"),
-          React.createElement("th",null,"Puesto"),
-          React.createElement("th",null,"Progreso"),
-          React.createElement("th",null,"Actualizado"),
-          React.createElement("th",null,"")
-        )),
-        React.createElement("tbody",null,evals.map(ev=>React.createElement("tr",{key:ev.id},
-          React.createElement("td",null,formatDate(ev.fecha)),
-          React.createElement("td",null,
-            React.createElement("div",{className:"row",style:{gap:8,flexWrap:"nowrap"}},
-              React.createElement("div",{className:"avatar",style:{width:26,height:26,fontSize:10,flexShrink:0}},getIniciales(ev.empleado_nombre)),
-              React.createElement("span",null,ev.empleado_nombre)
-            )
-          ),
-          React.createElement("td",{style:{color:"#555"}},ev.empleado_puesto||"—"),
-          React.createElement("td",null,
-            React.createElement("span",{className:"badge",style:{background:ev.completadas===ev.total?"#EAF3DE":"#FAEEDA",color:ev.completadas===ev.total?"#3B6D11":"#854F0B"}},`${ev.completadas}/${ev.total}`)
-          ),
-          React.createElement("td",{style:{color:"#777",fontSize:12}},ev.updated_at?formatDate(ev.updated_at):"—"),
-          React.createElement("td",null,
-            React.createElement("div",{className:"row",style:{gap:4,justifyContent:"flex-end",flexWrap:"nowrap"}},
-              React.createElement("button",{className:"small",onClick:()=>setDetalle(ev)},"Ver"),
-              React.createElement("button",{className:"small danger",onClick:()=>eliminar(ev.id)},"×")
+    loading
+      ?React.createElement("div",{style:{textAlign:"center",padding:"2rem",color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando...")
+      :evals.length===0
+        ?React.createElement("div",{className:"empty-state"},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"📋"),React.createElement("p",null,"No hay evaluaciones que coincidan."))
+        :React.createElement("div",{className:"card",style:{padding:0,overflow:"hidden"}},
+            React.createElement("table",{className:"hist-table"},
+              React.createElement("thead",null,React.createElement("tr",null,
+                React.createElement("th",null,"Fecha"),
+                React.createElement("th",null,"Empleado"),
+                React.createElement("th",null,"Puesto"),
+                React.createElement("th",null,"Progreso"),
+                React.createElement("th",null,"")
+              )),
+              React.createElement("tbody",null,evals.map(ev=>React.createElement("tr",{key:ev.id},
+                React.createElement("td",null,formatDate(ev.fecha)),
+                React.createElement("td",null,
+                  React.createElement("div",{className:"row",style:{gap:8,flexWrap:"nowrap"}},
+                    React.createElement("div",{className:"avatar",style:{width:26,height:26,fontSize:10,flexShrink:0}},getIniciales(ev.empleado_nombre)),
+                    React.createElement("span",null,ev.empleado_nombre)
+                  )
+                ),
+                React.createElement("td",{style:{color:"#555"}},ev.empleado_puesto||"—"),
+                React.createElement("td",null,
+                  React.createElement("span",{className:"badge",style:{background:ev.completadas===ev.total?"#EAF3DE":"#FAEEDA",color:ev.completadas===ev.total?"#3B6D11":"#854F0B"}},
+                    `${ev.completadas}/${ev.total}`)
+                ),
+                React.createElement("td",null,
+                  React.createElement("div",{className:"row",style:{gap:4,justifyContent:"flex-end",flexWrap:"nowrap"}},
+                    React.createElement("button",{className:"small",onClick:()=>setDetalle(ev)},"Ver"),
+                    React.createElement("button",{className:"small danger",onClick:()=>eliminar(ev.id)},"×")
+                  )
+                )
+              )))
             )
           )
-        )))
-      )
-    )
   );
 }
 
-// ─── APP ──────────────────────────────────────────────────────────────────────
+// ── APP ───────────────────────────────────────────────────────────────────────
 function App(){
   const [tab,setTab]=useState("empleados");
   const [toast,setToast]=useState(null);
@@ -546,23 +615,22 @@ function App(){
 
   function showToast(msg,type="ok"){setToast({msg,type,k:Date.now()});}
 
-  if(!configured) return React.createElement(React.Fragment,null,
-    React.createElement("div",{className:"nav"},React.createElement("span",{className:"nav-brand"},"📊 Evaluaciones de Desempeño")),
-    React.createElement(ConfigScreen)
-  );
-
   return React.createElement(React.Fragment,null,
     React.createElement("div",{className:"nav"},
       React.createElement("span",{className:"nav-brand"},"📊 Evaluaciones"),
-      ["empleados","nueva","historial"].map(t=>
-        React.createElement("button",{key:t,className:`nav-tab ${tab===t?"active":""}`,onClick:()=>setTab(t)},
-          t==="empleados"?"Empleados":t==="nueva"?"Nueva evaluación":"Historial"
-        )
+      configured&&React.createElement(React.Fragment,null,
+        React.createElement("button",{className:`nav-tab ${tab==="empleados"?"active":""}`,onClick:()=>setTab("empleados")},"Empleados"),
+        React.createElement("button",{className:`nav-tab ${tab==="nueva"?"active":""}`,onClick:()=>setTab("nueva")},"Nueva evaluación"),
+        React.createElement("button",{className:`nav-tab ${tab==="historial"?"active":""}`,onClick:()=>setTab("historial")},"Historial")
       )
     ),
-    tab==="empleados"&&React.createElement(EmpleadosTab,{toast:showToast}),
-    tab==="nueva"&&React.createElement(NuevaEvalTab,{toast:showToast}),
-    tab==="historial"&&React.createElement(HistorialTab,{toast:showToast}),
+    !configured
+      ?React.createElement(ConfigScreen)
+      :React.createElement(React.Fragment,null,
+          tab==="empleados"&&React.createElement(EmpleadosTab,{toast:showToast}),
+          tab==="nueva"&&React.createElement(NuevaEvalTab,{toast:showToast}),
+          tab==="historial"&&React.createElement(HistorialTab,{toast:showToast})
+        ),
     toast&&React.createElement(Toast,{key:toast.k,msg:toast.msg,type:toast.type,onDone:()=>setToast(null)})
   );
 }
