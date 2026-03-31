@@ -476,7 +476,7 @@ function EmpleadosTab(props) {
     p.then(function(){ toast(editId?"Empleado actualizado":"Empleado creado"); setModal(false);setEditId(null);setForm({nombre:"",puesto:"",departamento:""});setSaving(false);load(); })
      .catch(function(){ toast("Error al guardar","error");setSaving(false); });
   }
-  function del(id){ sb.patch("empleados?id=eq."+id,{activo:false}).then(function(){toast("Eliminado");load();}).catch(function(){toast("Error","error");}); }
+  function del(id){ if(!window.confirm("¿Seguro que quieres eliminar este empleado?")) return; sb.patch("empleados?id=eq."+id,{activo:false}).then(function(){toast("Eliminado");load();}).catch(function(){toast("Error","error");}); }
   function openEdit(emp){ setForm({nombre:emp.nombre,puesto:emp.puesto||"",departamento:emp.departamento||""});setEditId(emp.id);setModal(true); }
 
   return ce("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
@@ -710,7 +710,7 @@ function HistorialTab(props) {
   }
   useEffect(function(){load();},[filtroEmp,filtroDesde,filtroHasta]);
 
-  function eliminar(id){ sb.del("evaluaciones?id=eq."+id).then(function(){toast("Eliminada");if(detalle&&detalle.id===id)setDetalle(null);load();}).catch(function(){toast("Error","error");}); }
+  function eliminar(id){ if(!window.confirm("¿Seguro que quieres eliminar esta evaluación? Esta acción no se puede deshacer.")) return; sb.del("evaluaciones?id=eq."+id).then(function(){toast("Eliminada");if(detalle&&detalle.id===id)setDetalle(null);load();}).catch(function(){toast("Error","error");}); }
 
   if(detalle) {
     var res = calcularResumenSecciones(detalle.respuestas);
