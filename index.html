@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evaluaciones de Desempeño</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#f5f5f5;color:#111;font-size:14px;line-height:1.6}
+button{cursor:pointer;font-family:inherit;font-size:13px;border:0.5px solid #ccc;border-radius:8px;padding:7px 14px;background:#fff;color:#111;transition:background 0.15s}
+button:hover{background:#f0f0f0}
+button.primary{background:#1F4E79;color:#fff;border-color:#1F4E79}
+button.primary:hover{background:#163a5a}
+button.danger{background:#fff;color:#c0392b;border-color:#c0392b}
+button.danger:hover{background:#fdf2f2}
+button.small{padding:4px 10px;font-size:12px}
+button:disabled{opacity:0.5;cursor:not-allowed}
+input,select,textarea{font-family:inherit;font-size:13px;border:0.5px solid #ccc;border-radius:8px;padding:8px 10px;background:#fff;color:#111;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#1F4E79;box-shadow:0 0 0 2px rgba(31,78,121,0.15)}
+textarea{resize:vertical;min-height:80px}
+label{font-size:12px;font-weight:500;color:#555;display:block;margin-bottom:4px}
+.card{background:#fff;border:0.5px solid #e5e5e5;border-radius:12px;padding:1rem 1.25rem}
+.nav{background:#fff;border-bottom:0.5px solid #e5e5e5;padding:0 1.25rem;display:flex;align-items:center;gap:0;height:48px;position:sticky;top:0;z-index:10}
+.nav-tab{height:48px;padding:0 14px;border:none;border-radius:0;border-bottom:2px solid transparent;background:transparent;font-size:13px;color:#666;display:flex;align-items:center;gap:6px}
+.nav-tab:hover{background:#f5f5f5;color:#111}
+.nav-tab.active{border-bottom:2px solid #1F4E79;color:#1F4E79;font-weight:500}
+.nav-brand{font-weight:500;font-size:14px;color:#1F4E79;margin-right:16px;white-space:nowrap}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-ok{background:#EAF3DE;color:#3B6D11}
+.badge-warn{background:#FAEEDA;color:#854F0B}
+.badge-info{background:#E6F1FB;color:#185FA5}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spacer{flex:1}
+.section-title{font-size:13px;font-weight:500;color:#1F4E79;border-left:3px solid #1F4E79;padding-left:8px;margin:1.5rem 0 1rem}
+.eval-q{font-size:12px;font-style:italic;color:#555;margin-bottom:4px}
+.pregunta-bloque{border:0.5px solid #e5e5e5;border-radius:8px;padding:12px;margin-bottom:10px;background:#fafafa}
+.emp-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:0.5px solid #e5e5e5;border-radius:8px;background:#fff;margin-bottom:8px}
+.avatar{width:36px;height:36px;border-radius:50%;background:#D6E4F0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#1F4E79;flex-shrink:0}
+.hist-table{width:100%;border-collapse:collapse}
+.hist-table th{font-size:11px;font-weight:500;color:#777;text-align:left;padding:8px 12px;border-bottom:0.5px solid #e5e5e5;background:#fafafa}
+.hist-table td{font-size:13px;padding:10px 12px;border-bottom:0.5px solid #f0f0f0;vertical-align:middle}
+.hist-table tr:last-child td{border-bottom:none}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.35);display:flex;align-items:flex-start;justify-content:center;z-index:100;padding:2rem 1rem;overflow-y:auto}
+.modal{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:460px;border:0.5px solid #e5e5e5}
+.steps{display:flex;margin-bottom:1.5rem;border-bottom:0.5px solid #e5e5e5;overflow-x:auto}
+.step{flex:1;min-width:28px;padding:8px 4px;text-align:center;font-size:11px;color:#999;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.step.done{color:#555;border-bottom:2px solid #ccc}
+.step.active{color:#1F4E79;font-weight:500;border-bottom:2px solid #1F4E79}
+.progress-bar{height:3px;background:#e5e5e5;border-radius:2px;margin-bottom:1rem;overflow:hidden}
+.progress-fill{height:100%;background:#1F4E79;transition:width 0.3s}
+.empty-state{text-align:center;padding:3rem 1rem;color:#777}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.config-box{background:#fffbe6;border:0.5px solid #f5c842;border-radius:10px;padding:1rem 1.25rem;margin-bottom:1rem;font-size:13px}
+.config-box code{background:#f0f0f0;border-radius:4px;padding:2px 6px;font-size:12px;font-family:monospace}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #ccc;border-top-color:#1F4E79;border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1F4E79;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;animation:fadein 0.2s}
+.toast.error{background:#c0392b}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sql-block{background:#1e1e2e;color:#cdd6f4;border-radius:8px;padding:1rem;font-size:12px;font-family:monospace;white-space:pre;overflow-x:auto;margin:8px 0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {useState,useEffect,useCallback,useRef}=React;
+const {createRoot}=ReactDOM;
+
+// ─── CONFIGURACIÓN SUPABASE ───────────────────────────────────────────────────
+const SUPABASE_URL   = "TU_SUPABASE_URL";   // ej: https://xxxx.supabase.co
+const SUPABASE_ANON  = "TU_SUPABASE_ANON_KEY";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ─── CUESTIONARIO ─────────────────────────────────────────────────────────────
+const SECCIONES=[
+  {id:"organizacion",titulo:"Organización",preguntas:[
+    "¿Sabe distinguir entre temas importantes y temas urgentes?",
+    "¿Tiene la programación hecha con buen criterio?",
+    "¿El empleado distribuye de manera adecuada y efectiva el tiempo para cada tarea que realiza?",
+    "¿Cuenta con un plan o estrategia para llevar a cabo cada actividad?"
+  ]},
+  {id:"responsabilidad",titulo:"Responsabilidad",preguntas:[
+    "Cumple con las normas básicas de la empresa: puntualidad, horarios, orden y limpieza, programación…",
+    "¿Cumple con los plazos establecidos y con su programación?",
+    "¿Se entregan en tiempo y forma las tareas asignadas?",
+    "¿Hay interés de asumir labores extra por voluntad propia?"
+  ]},
+  {id:"conducta",titulo:"Conducta",preguntas:[
+    "¿El colaborador trabaja con ética en cada actividad realizada?",
+    "¿Es honesto cuando piden su opinión o cuando es necesario darla?"
+  ]},
+  {id:"recursos",titulo:"Manejo de Recursos",preguntas:[
+    "¿Dispone de todos los recursos y herramientas necesarias para realizar su trabajo?",
+    "¿Usa eficazmente el espacio y equipos de trabajo?",
+    "¿Saca el mayor provecho de todas las herramientas que les ofrece la empresa?",
+    "¿Ha propuesto o hecho algo para ahorrar o reducir costos en el uso de los recursos?"
+  ]},
+  {id:"interaccion",titulo:"Interacción con Compañeros",preguntas:[
+    "¿Influye de manera positiva o negativa la convivencia con sus compañeros, jefes, subordinados, clientes, proveedores, etc.?"
+  ]},
+  {id:"compromiso",titulo:"Compromiso",preguntas:[
+    "¿El empleado está comprometido con los objetivos de la organización?",
+    "¿Sus acciones van de acuerdo a la misión, visión y valores de la compañía?"
+  ]},
+  {id:"contribucion",titulo:"Contribución",preguntas:[
+    "¿Las habilidades técnicas, profesionales o personales contribuyen positivamente para cumplir los objetivos del negocio?"
+  ]},
+  {id:"cooperacion",titulo:"Cooperación",preguntas:[
+    "¿El empleado está abierto a cooperar con otros miembros de la organización?",
+    "¿Sabe trabajar en equipo y ve por los demás?"
+  ]},
+  {id:"conflictos",titulo:"Manejo de Conflictos",preguntas:[
+    "¿Cómo reacciona el colaborador cuando hay un problema en su equipo de trabajo o en la organización?",
+    "¿Propone soluciones a los conflictos?"
+  ]},
+  {id:"cambio",titulo:"Manejo del Cambio",preguntas:[
+    "¿Cómo reacciona ante los cambios?",
+    "¿Se adapta a las eventualidades que se presentan día a día?",
+    "¿Es capaz de asumir un rol de más responsabilidad?"
+  ]},
+  {id:"objetivos",titulo:"Cumplimiento de Objetivos",preguntas:[
+    "¿Cumple totalmente, parcialmente o no cumple sus objetivos?",
+    "En caso de no cumplir: causas, debilidades, necesidades…"
+  ]}
+];
+const TOTAL_PREGUNTAS=SECCIONES.reduce((a,s)=>a+s.preguntas.length,0);
+
+function initRespuestas(){
+  const r={};
+  SECCIONES.forEach(s=>s.preguntas.forEach((_,i)=>{r[s.id+"_"+i]="";}));
+  return r;
+}
+function getIniciales(n){return(n||"?").split(" ").slice(0,2).map(p=>p[0]).join("").toUpperCase();}
+function formatDate(iso){if(!iso)return"";const d=new Date(iso);return d.toLocaleDateString("es-ES",{day:"2-digit",month:"2-digit",year:"numeric"});}
+function contarRespuestas(r){return Object.values(r||{}).filter(v=>(v||"").trim()).length;}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+function Toast({msg,type,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,3000);return()=>clearTimeout(t);},[]);
+  return React.createElement("div",{className:`toast${type==="error"?" error":""}`},msg);
+}
+
+// ─── PANTALLA CONFIG ──────────────────────────────────────────────────────────
+function ConfigScreen(){
+  const SQL=`-- Ejecuta esto en Supabase > SQL Editor
+
+create table empleados (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  puesto text,
+  departamento text,
+  activo boolean default true,
+  created_at timestamptz default now()
+);
+
+create table evaluaciones (
+  id uuid primary key default gen_random_uuid(),
+  empleado_id uuid references empleados(id) on delete cascade,
+  empleado_nombre text,
+  empleado_puesto text,
+  fecha date not null,
+  respuestas jsonb default '{}',
+  completadas integer default 0,
+  total integer default 26,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);`;
+
+  return React.createElement("div",{style:{maxWidth:620,margin:"2rem auto",padding:"0 1rem"}},
+    React.createElement("div",{className:"card"},
+      React.createElement("div",{style:{fontWeight:500,fontSize:16,marginBottom:"0.5rem",color:"#1F4E79"}},"⚙️ Configuración de Supabase"),
+      React.createElement("p",{style:{fontSize:13,color:"#555",marginBottom:"1rem"}},"Sigue estos pasos para conectar la aplicación a tu base de datos:"),
+
+      React.createElement("div",{style:{marginBottom:"1rem"}},
+        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"1. Crea el proyecto en Supabase"),
+        React.createElement("p",{style:{fontSize:13,color:"#555"}},"Ve a ",React.createElement("a",{href:"https://supabase.com",target:"_blank",style:{color:"#1F4E79"}},"supabase.com"),", crea una cuenta gratuita y un nuevo proyecto.")
+      ),
+
+      React.createElement("div",{style:{marginBottom:"1rem"}},
+        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"2. Crea las tablas"),
+        React.createElement("p",{style:{fontSize:13,color:"#555",marginBottom:6}},"En tu proyecto ve a ",React.createElement("strong",null,"SQL Editor")," y ejecuta:"),
+        React.createElement("div",{className:"sql-block"},SQL)
+      ),
+
+      React.createElement("div",{style:{marginBottom:"1rem"}},
+        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"3. Copia tus credenciales"),
+        React.createElement("p",{style:{fontSize:13,color:"#555"}},"En tu proyecto ve a ",React.createElement("strong",null,"Project Settings > API")," y copia:"),
+        React.createElement("ul",{style:{fontSize:13,color:"#555",paddingLeft:"1.2rem",marginTop:6}},
+          React.createElement("li",null,React.createElement("code",null,"Project URL")),
+          React.createElement("li",null,React.createElement("code",null,"anon public key"))
+        )
+      ),
+
+      React.createElement("div",null,
+        React.createElement("div",{style:{fontWeight:500,fontSize:13,marginBottom:6}},"4. Edita el archivo HTML"),
+        React.createElement("p",{style:{fontSize:13,color:"#555"}},"Abre el archivo con un editor de texto y reemplaza estas dos líneas al inicio del script:"),
+        React.createElement("div",{className:"sql-block"},`const SUPABASE_URL  = "TU_SUPABASE_URL";\nconst SUPABASE_ANON = "TU_SUPABASE_ANON_KEY";`)
+      )
+    )
+  );
+}
+
+// ─── EMPLEADOS ────────────────────────────────────────────────────────────────
+function EmpleadosTab({toast}){
+  const [empleados,setEmpleados]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [modal,setModal]=useState(false);
+  const [form,setForm]=useState({nombre:"",puesto:"",departamento:""});
+  const [editId,setEditId]=useState(null);
+  const [saving,setSaving]=useState(false);
+  const [counts,setCounts]=useState({});
+
+  async function load(){
+    setLoading(true);
+    const {data:emps}=await db.from("empleados").select("*").eq("activo",true).order("nombre");
+    const {data:evs}=await db.from("evaluaciones").select("empleado_id");
+    const c={};
+    (evs||[]).forEach(e=>{c[e.empleado_id]=(c[e.empleado_id]||0)+1;});
+    setEmpleados(emps||[]);setCounts(c);setLoading(false);
+  }
+
+  useEffect(()=>{load();},[]);
+
+  async function save(){
+    if(!form.nombre.trim()) return;
+    setSaving(true);
+    if(editId){
+      const {error}=await db.from("empleados").update(form).eq("id",editId);
+      if(error){toast("Error al guardar","error");}else{toast("Empleado actualizado");}
+    } else {
+      const {error}=await db.from("empleados").insert(form);
+      if(error){toast("Error al crear empleado","error");}else{toast("Empleado creado");}
+    }
+    setSaving(false);setModal(false);setEditId(null);setForm({nombre:"",puesto:"",departamento:""});
+    load();
+  }
+
+  async function del(id){
+    const {error}=await db.from("empleados").update({activo:false}).eq("id",id);
+    if(error) toast("Error al eliminar","error"); else {toast("Empleado eliminado");load();}
+  }
+
+  function openEdit(emp){setForm({nombre:emp.nombre,puesto:emp.puesto||"",departamento:emp.departamento||""});setEditId(emp.id);setModal(true);}
+
+  return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
+    React.createElement("div",{className:"row",style:{marginBottom:"1rem"}},
+      React.createElement("span",{style:{fontWeight:500,fontSize:15}},"Empleados"),
+      React.createElement("span",{className:"spacer"}),
+      React.createElement("button",{className:"primary",onClick:()=>{setForm({nombre:"",puesto:"",departamento:""});setEditId(null);setModal(true)}},"+ Nuevo empleado")
+    ),
+    loading?React.createElement("div",{style:{textAlign:"center",padding:"2rem",color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando..."):
+    empleados.length===0?React.createElement("div",{className:"empty-state"},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"👥"),React.createElement("p",null,"Aún no hay empleados. Añade el primero.")):
+    empleados.map(emp=>React.createElement("div",{key:emp.id,className:"emp-row"},
+      React.createElement("div",{className:"avatar"},getIniciales(emp.nombre)),
+      React.createElement("div",{style:{flex:1}},
+        React.createElement("div",{style:{fontWeight:500,fontSize:13}},emp.nombre),
+        React.createElement("div",{style:{fontSize:12,color:"#555"}},[emp.puesto,emp.departamento].filter(Boolean).join(" · ")||"Sin datos")
+      ),
+      React.createElement("span",{className:"badge badge-info"},`${counts[emp.id]||0} eval.`),
+      React.createElement("button",{className:"small",onClick:()=>openEdit(emp)},"Editar"),
+      React.createElement("button",{className:"small danger",onClick:()=>del(emp.id)},"Eliminar")
+    )),
+    modal&&React.createElement("div",{className:"modal-bg",onClick:e=>{if(e.target===e.currentTarget){setModal(false);setEditId(null);}}},
+      React.createElement("div",{className:"modal"},
+        React.createElement("p",{style:{fontWeight:500,marginBottom:"1rem"}},editId?"Editar empleado":"Nuevo empleado"),
+        React.createElement("label",null,"Nombre completo"),
+        React.createElement("input",{value:form.nombre,onChange:e=>setForm({...form,nombre:e.target.value}),style:{marginBottom:10},autoFocus:true}),
+        React.createElement("label",null,"Puesto"),
+        React.createElement("input",{value:form.puesto,onChange:e=>setForm({...form,puesto:e.target.value}),style:{marginBottom:10}}),
+        React.createElement("label",null,"Departamento"),
+        React.createElement("input",{value:form.departamento,onChange:e=>setForm({...form,departamento:e.target.value}),style:{marginBottom:16}}),
+        React.createElement("div",{className:"row"},
+          React.createElement("button",{onClick:()=>{setModal(false);setEditId(null);}},"Cancelar"),
+          React.createElement("span",{className:"spacer"}),
+          React.createElement("button",{className:"primary",disabled:saving,onClick:save},saving?React.createElement(React.Fragment,null,React.createElement("span",{className:"spinner"}),"Guardando..."):(editId?"Guardar cambios":"Crear empleado"))
+        )
+      )
+    )
+  );
+}
+
+// ─── NUEVA EVALUACIÓN ─────────────────────────────────────────────────────────
+function NuevaEvalTab({toast}){
+  const [empleados,setEmpleados]=useState([]);
+  const [step,setStep]=useState(0); // 0=config, 1=formulario, 2=ok
+  const [empId,setEmpId]=useState("");
+  const [fecha,setFecha]=useState(new Date().toISOString().split("T")[0]);
+  const [respuestas,setRespuestas]=useState(initRespuestas());
+  const [secIdx,setSecIdx]=useState(0);
+  const [saving,setSaving]=useState(false);
+  const [evalId,setEvalId]=useState(null); // id del registro en Supabase (para upsert)
+  const [historial,setHistorial]=useState([]);
+  const [loadingHist,setLoadingHist]=useState(false);
+  const autoSaveRef=useRef(null);
+
+  useEffect(()=>{
+    db.from("empleados").select("*").eq("activo",true).order("nombre").then(({data})=>setEmpleados(data||[]));
+  },[]);
+
+  useEffect(()=>{
+    if(!empId){setHistorial([]);return;}
+    setLoadingHist(true);
+    db.from("evaluaciones").select("id,fecha,completadas,total").eq("empleado_id",empId).order("fecha",{ascending:false})
+      .then(({data})=>{setHistorial(data||[]);setLoadingHist(false);});
+  },[empId]);
+
+  async function cargarEval(id){
+    const {data}=await db.from("evaluaciones").select("*").eq("id",id).single();
+    if(data){setRespuestas({...initRespuestas(),...data.respuestas});setEvalId(data.id);setFecha(data.fecha);}
+  }
+
+  // Autoguardado cada 30s mientras se rellena
+  useEffect(()=>{
+    if(step!==1) return;
+    autoSaveRef.current=setInterval(()=>guardar(true),30000);
+    return()=>clearInterval(autoSaveRef.current);
+  },[step,respuestas,empId,fecha,evalId]);
+
+  async function guardar(silencioso=false){
+    const emp=empleados.find(e=>e.id===empId);
+    if(!emp||!empId) return;
+    if(!silencioso) setSaving(true);
+    const completadas=contarRespuestas(respuestas);
+    const payload={empleado_id:empId,empleado_nombre:emp.nombre,empleado_puesto:emp.puesto||"",fecha,respuestas,completadas,total:TOTAL_PREGUNTAS,updated_at:new Date().toISOString()};
+    let error,data;
+    if(evalId){
+      ({error}=await db.from("evaluaciones").update(payload).eq("id",evalId));
+    } else {
+      ({data,error}=await db.from("evaluaciones").insert(payload).select().single());
+      if(data) setEvalId(data.id);
+    }
+    if(!silencioso) setSaving(false);
+    if(error){if(!silencioso)toast("Error al guardar","error");}
+    else{if(!silencioso){setStep(2);}}
+    if(silencioso&&!error) toast("Guardado automático ✓");
+  }
+
+  function reset(){setStep(0);setEmpId("");setFecha(new Date().toISOString().split("T")[0]);setRespuestas(initRespuestas());setSecIdx(0);setEvalId(null);}
+
+  function exportarTxt(){
+    const emp=empleados.find(e=>e.id===empId);
+    if(!emp) return;
+    let txt=`EVALUACIÓN DE DESEMPEÑO\nEmpleado: ${emp.nombre}\nPuesto: ${emp.puesto||""}\nDepartamento: ${emp.departamento||""}\nFecha: ${formatDate(fecha)}\n`;
+    SECCIONES.forEach(sec=>{
+      txt+=`\n${sec.titulo.toUpperCase()}\n${"=".repeat(sec.titulo.length)}\n`;
+      sec.preguntas.forEach((p,i)=>{txt+=`\nPregunta: ${p}\nRespuesta: ${respuestas[sec.id+"_"+i]||"—"}\n`;});
+    });
+    const b=new Blob([txt],{type:"text/plain;charset=utf-8"});
+    const u=URL.createObjectURL(b);const a=document.createElement("a");
+    a.href=u;a.download=`Evaluacion_${emp.nombre.replace(/ /g,"_")}_${fecha}.txt`;a.click();URL.revokeObjectURL(u);
+  }
+
+  const completadas=contarRespuestas(respuestas);
+  const pct=Math.round((completadas/TOTAL_PREGUNTAS)*100);
+  const secActual=SECCIONES[secIdx];
+
+  if(step===2) return React.createElement("div",{style:{padding:"2rem",textAlign:"center",maxWidth:480,margin:"0 auto"}},
+    React.createElement("div",{style:{fontSize:40,marginBottom:12}},"✅"),
+    React.createElement("p",{style:{fontWeight:500,fontSize:15,marginBottom:8}},"Evaluación guardada en Supabase"),
+    React.createElement("p",{style:{color:"#555",fontSize:13,marginBottom:20}},`${completadas} de ${TOTAL_PREGUNTAS} respuestas completadas`),
+    React.createElement("div",{className:"row",style:{justifyContent:"center",gap:10}},
+      React.createElement("button",{onClick:reset},"Nueva evaluación"),
+      React.createElement("button",{className:"primary",onClick:exportarTxt},"Descargar borrador (.txt)")
+    )
+  );
+
+  if(step===0) return React.createElement("div",{style:{padding:"1rem",maxWidth:520,margin:"0 auto"}},
+    React.createElement("p",{style:{fontWeight:500,fontSize:15,marginBottom:"1rem"}},"Nueva evaluación"),
+    React.createElement("div",{className:"card"},
+      React.createElement("label",null,"Empleado"),
+      React.createElement("select",{value:empId,onChange:e=>{setEmpId(e.target.value);setEvalId(null);setRespuestas(initRespuestas());},style:{marginBottom:12}},
+        React.createElement("option",{value:""},"Seleccionar empleado..."),
+        empleados.map(emp=>React.createElement("option",{key:emp.id,value:emp.id},emp.nombre))
+      ),
+      React.createElement("label",null,"Fecha de evaluación"),
+      React.createElement("input",{type:"date",value:fecha,onChange:e=>setFecha(e.target.value),style:{marginBottom:12}}),
+      empId&&React.createElement("div",{style:{marginBottom:12}},
+        React.createElement("label",null,"Continuar desde evaluación anterior (opcional)"),
+        loadingHist?React.createElement("div",{style:{fontSize:12,color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando..."):
+        React.createElement("select",{value:evalId||"",onChange:e=>{if(e.target.value)cargarEval(e.target.value);else{setRespuestas(initRespuestas());setEvalId(null);}}},
+          React.createElement("option",{value:""},"Empezar desde cero"),
+          historial.map(ev=>React.createElement("option",{key:ev.id,value:ev.id},`${formatDate(ev.fecha)} · ${ev.completadas}/${ev.total} resp.`))
+        )
+      ),
+      React.createElement("button",{className:"primary",style:{width:"100%",marginTop:4},disabled:!empId,onClick:()=>{if(empId)setStep(1);}},"Iniciar evaluación →")
+    )
+  );
+
+  return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
+    React.createElement("div",{className:"row",style:{marginBottom:"0.75rem"}},
+      React.createElement("button",{onClick:()=>setStep(0),style:{fontSize:12}},"← Volver"),
+      React.createElement("span",{className:"spacer"}),
+      React.createElement("span",{style:{fontSize:12,color:"#555"}},`${completadas}/${TOTAL_PREGUNTAS} respuestas`),
+      React.createElement("span",{className:"badge badge-ok"},`${pct}%`)
+    ),
+    React.createElement("div",{className:"progress-bar"},React.createElement("div",{className:"progress-fill",style:{width:`${pct}%`}})),
+    React.createElement("div",{className:"steps"},
+      SECCIONES.map((s,i)=>React.createElement("div",{key:s.id,className:`step ${i===secIdx?"active":i<secIdx?"done":""}`,onClick:()=>setSecIdx(i)},i+1))
+    ),
+    React.createElement("div",{className:"card",style:{marginBottom:12}},
+      React.createElement("div",{className:"section-title",style:{marginTop:0}},secActual.titulo),
+      secActual.preguntas.map((p,i)=>{
+        const k=secActual.id+"_"+i;
+        return React.createElement("div",{key:k,className:"pregunta-bloque"},
+          React.createElement("div",{className:"eval-q"},p),
+          React.createElement("textarea",{placeholder:"Escribe tu valoración...",value:respuestas[k],onChange:e=>setRespuestas({...respuestas,[k]:e.target.value})})
+        );
+      })
+    ),
+    React.createElement("div",{className:"row"},
+      secIdx>0&&React.createElement("button",{onClick:()=>setSecIdx(secIdx-1)},"← Anterior"),
+      React.createElement("span",{className:"spacer"}),
+      React.createElement("button",{className:"primary",disabled:saving,onClick:()=>guardar(false)},
+        saving?React.createElement(React.Fragment,null,React.createElement("span",{className:"spinner"}),"Guardando..."):"Guardar evaluación"
+      ),
+      secIdx<SECCIONES.length-1&&React.createElement("button",{className:"primary",onClick:()=>setSecIdx(secIdx+1)},"Siguiente →")
+    )
+  );
+}
+
+// ─── HISTORIAL ────────────────────────────────────────────────────────────────
+function HistorialTab({toast}){
+  const [evals,setEvals]=useState([]);
+  const [loading,setLoading]=useState(true);
+  const [empleados,setEmpleados]=useState([]);
+  const [filtroEmp,setFiltroEmp]=useState("");
+  const [filtroDesde,setFiltroDesde]=useState("");
+  const [filtroHasta,setFiltroHasta]=useState("");
+  const [detalle,setDetalle]=useState(null);
+
+  async function load(){
+    setLoading(true);
+    let q=db.from("evaluaciones").select("*").order("fecha",{ascending:false});
+    if(filtroEmp) q=q.eq("empleado_id",filtroEmp);
+    if(filtroDesde) q=q.gte("fecha",filtroDesde);
+    if(filtroHasta) q=q.lte("fecha",filtroHasta);
+    const {data}=await q;
+    setEvals(data||[]);setLoading(false);
+  }
+
+  useEffect(()=>{
+    db.from("empleados").select("id,nombre").eq("activo",true).order("nombre").then(({data})=>setEmpleados(data||[]));
+  },[]);
+
+  useEffect(()=>{load();},[filtroEmp,filtroDesde,filtroHasta]);
+
+  async function eliminar(id){
+    const {error}=await db.from("evaluaciones").delete().eq("id",id);
+    if(error) toast("Error al eliminar","error");
+    else{toast("Evaluación eliminada");if(detalle?.id===id)setDetalle(null);load();}
+  }
+
+  if(detalle) return React.createElement("div",{style:{padding:"1rem",maxWidth:700,margin:"0 auto"}},
+    React.createElement("div",{className:"row",style:{marginBottom:"1rem"}},
+      React.createElement("button",{onClick:()=>setDetalle(null)},"← Volver"),
+      React.createElement("span",{className:"spacer"}),
+      React.createElement("span",{style:{fontSize:12,color:"#777"}},`ID: ${detalle.id.slice(0,8)}…`),
+      React.createElement("button",{className:"small danger",onClick:()=>eliminar(detalle.id)},"Eliminar")
+    ),
+    React.createElement("div",{className:"card",style:{marginBottom:12}},
+      React.createElement("div",{className:"row"},
+        React.createElement("div",{className:"avatar"},getIniciales(detalle.empleado_nombre)),
+        React.createElement("div",null,
+          React.createElement("div",{style:{fontWeight:500}},detalle.empleado_nombre),
+          React.createElement("div",{style:{fontSize:12,color:"#555"}},detalle.empleado_puesto||"—")
+        ),
+        React.createElement("span",{className:"spacer"}),
+        React.createElement("span",{style:{fontSize:13,color:"#555"}},formatDate(detalle.fecha)),
+        React.createElement("span",{className:"badge",style:{background:detalle.completadas===detalle.total?"#EAF3DE":"#FAEEDA",color:detalle.completadas===detalle.total?"#3B6D11":"#854F0B"}},`${detalle.completadas}/${detalle.total}`)
+      )
+    ),
+    SECCIONES.map(sec=>React.createElement("div",{key:sec.id,style:{marginBottom:12}},
+      React.createElement("div",{className:"section-title"},sec.titulo),
+      sec.preguntas.map((p,i)=>{
+        const r=(detalle.respuestas||{})[sec.id+"_"+i];
+        if(!r) return null;
+        return React.createElement("div",{key:i,className:"pregunta-bloque"},
+          React.createElement("div",{className:"eval-q"},p),
+          React.createElement("div",{style:{fontSize:13,marginTop:4}},r)
+        );
+      })
+    ))
+  );
+
+  return React.createElement("div",{style:{padding:"1rem",maxWidth:800,margin:"0 auto"}},
+    React.createElement("p",{style:{fontWeight:500,fontSize:15,marginBottom:"1rem"}},"Historial de evaluaciones"),
+    React.createElement("div",{className:"card",style:{marginBottom:12}},
+      React.createElement("div",{className:"grid3"},
+        React.createElement("div",null,React.createElement("label",null,"Empleado"),
+          React.createElement("select",{value:filtroEmp,onChange:e=>setFiltroEmp(e.target.value)},
+            React.createElement("option",{value:""},"Todos"),
+            empleados.map(e=>React.createElement("option",{key:e.id,value:e.id},e.nombre))
+          )
+        ),
+        React.createElement("div",null,React.createElement("label",null,"Desde"),React.createElement("input",{type:"date",value:filtroDesde,onChange:e=>setFiltroDesde(e.target.value)})),
+        React.createElement("div",null,React.createElement("label",null,"Hasta"),React.createElement("input",{type:"date",value:filtroHasta,onChange:e=>setFiltroHasta(e.target.value)}))
+      )
+    ),
+    loading?React.createElement("div",{style:{textAlign:"center",padding:"2rem",color:"#777"}},React.createElement("span",{className:"spinner"}),"Cargando..."):
+    evals.length===0?React.createElement("div",{className:"empty-state"},React.createElement("div",{style:{fontSize:32,marginBottom:8}},"📋"),React.createElement("p",null,"No hay evaluaciones que coincidan con los filtros.")):
+    React.createElement("div",{className:"card",style:{padding:0,overflow:"hidden"}},
+      React.createElement("table",{className:"hist-table"},
+        React.createElement("thead",null,React.createElement("tr",null,
+          React.createElement("th",null,"Fecha"),
+          React.createElement("th",null,"Empleado"),
+          React.createElement("th",null,"Puesto"),
+          React.createElement("th",null,"Progreso"),
+          React.createElement("th",null,"Actualizado"),
+          React.createElement("th",null,"")
+        )),
+        React.createElement("tbody",null,evals.map(ev=>React.createElement("tr",{key:ev.id},
+          React.createElement("td",null,formatDate(ev.fecha)),
+          React.createElement("td",null,
+            React.createElement("div",{className:"row",style:{gap:8,flexWrap:"nowrap"}},
+              React.createElement("div",{className:"avatar",style:{width:26,height:26,fontSize:10,flexShrink:0}},getIniciales(ev.empleado_nombre)),
+              React.createElement("span",null,ev.empleado_nombre)
+            )
+          ),
+          React.createElement("td",{style:{color:"#555"}},ev.empleado_puesto||"—"),
+          React.createElement("td",null,
+            React.createElement("span",{className:"badge",style:{background:ev.completadas===ev.total?"#EAF3DE":"#FAEEDA",color:ev.completadas===ev.total?"#3B6D11":"#854F0B"}},`${ev.completadas}/${ev.total}`)
+          ),
+          React.createElement("td",{style:{color:"#777",fontSize:12}},ev.updated_at?formatDate(ev.updated_at):"—"),
+          React.createElement("td",null,
+            React.createElement("div",{className:"row",style:{gap:4,justifyContent:"flex-end",flexWrap:"nowrap"}},
+              React.createElement("button",{className:"small",onClick:()=>setDetalle(ev)},"Ver"),
+              React.createElement("button",{className:"small danger",onClick:()=>eliminar(ev.id)},"×")
+            )
+          )
+        )))
+      )
+    )
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+function App(){
+  const [tab,setTab]=useState("empleados");
+  const [toast,setToast]=useState(null);
+  const configured=SUPABASE_URL!=="TU_SUPABASE_URL";
+
+  function showToast(msg,type="ok"){setToast({msg,type,k:Date.now()});}
+
+  if(!configured) return React.createElement(React.Fragment,null,
+    React.createElement("div",{className:"nav"},React.createElement("span",{className:"nav-brand"},"📊 Evaluaciones de Desempeño")),
+    React.createElement(ConfigScreen)
+  );
+
+  return React.createElement(React.Fragment,null,
+    React.createElement("div",{className:"nav"},
+      React.createElement("span",{className:"nav-brand"},"📊 Evaluaciones"),
+      ["empleados","nueva","historial"].map(t=>
+        React.createElement("button",{key:t,className:`nav-tab ${tab===t?"active":""}`,onClick:()=>setTab(t)},
+          t==="empleados"?"Empleados":t==="nueva"?"Nueva evaluación":"Historial"
+        )
+      )
+    ),
+    tab==="empleados"&&React.createElement(EmpleadosTab,{toast:showToast}),
+    tab==="nueva"&&React.createElement(NuevaEvalTab,{toast:showToast}),
+    tab==="historial"&&React.createElement(HistorialTab,{toast:showToast}),
+    toast&&React.createElement(Toast,{key:toast.k,msg:toast.msg,type:toast.type,onDone:()=>setToast(null)})
+  );
+}
+
+createRoot(document.getElementById("root")).render(React.createElement(App));
+</script>
+</body>
+</html>
