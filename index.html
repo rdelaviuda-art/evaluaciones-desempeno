@@ -234,9 +234,9 @@ create policy "acceso_publico_evaluaciones" on evaluaciones
       step("4","Edita este archivo HTML",
         React.createElement("p",{style:{fontSize:13,color:"#555"}},
           "Abre el archivo con el Bloc de notas, busca las líneas ",
-          React.createElement("code",{style:{background:"#f0f0f0",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}},"TU_SUPABASE_URL"),
+          React.createElement("code",{style:{background:"#f0f0f0",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}},"https://czbkwzvaqduhehpzjpwn.supabase.co"),
           " y ",
-          React.createElement("code",{style:{background:"#f0f0f0",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}},"TU_SUPABASE_ANON_KEY"),
+          React.createElement("code",{style:{background:"#f0f0f0",borderRadius:4,padding:"1px 5px",fontFamily:"monospace"}},"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Ymt3enZhcWR1aGVocHpqcHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NTcxNTYsImV4cCI6MjA5MDQzMzE1Nn0.mXmih4q3Pq-0QcPMPR09F9SXq8-9Vc0RE0KoepPNctc"),
           " y sustitúyelas por tus valores reales."
         )
       )
@@ -611,7 +611,7 @@ function HistorialTab({toast}){
 function App(){
   const [tab,setTab]=useState("empleados");
   const [toast,setToast]=useState(null);
-  const configured=SUPABASE_URL!=="TU_SUPABASE_URL";
+  const configured=SUPABASE_URL!=="https://czbkwzvaqduhehpzjpwn.supabase.co";
 
   function showToast(msg,type="ok"){setToast({msg,type,k:Date.now()});}
 
