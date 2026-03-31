@@ -1,0 +1,2 @@
+var SUPABASE_URL  = "https://czbkwzvaqduhehpzjpwn.supabase.co";
+var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Ymt3enZhcWR1aGVocHpqcHduIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NTcxNTYsImV4cCI6MjA5MDQzMzE1Nn0.mXmih4q3Pq-0QcPMPR09F9SXq8-9Vc0RE0KoepPNctc";
